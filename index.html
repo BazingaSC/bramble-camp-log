@@ -207,6 +207,9 @@ label.f{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13p
 .appbar{margin-top:40px;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px}
 .appbar h3{font-family:var(--display);font-weight:400;font-size:22px;color:var(--pine)}
 .appbtns{display:flex;flex-wrap:wrap;gap:8px}
+.syncbox{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;border-top:1px dashed var(--line);padding-top:12px}
+.syncbox .meta{margin:0;max-width:62ch}
+.syncbox .meta.err{color:var(--hard)}
 footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion: reduce){
@@ -445,7 +448,7 @@ footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px sol
     <div class="panel-h">
       <div>
         <h2>Watch List</h2>
-        <p>Hard-to-get sites we're waiting on. When an opening shows up for our dates, an email alert goes out.</p>
+        <p id="watchIntro">Hard-to-get sites we're waiting on. When an opening shows up for our dates, an email alert goes out.</p>
       </div>
     </div>
     <div class="watch-layout">
@@ -453,7 +456,7 @@ footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px sol
         <div class="cards" id="watchList" style="grid-template-columns:1fr"></div>
       </div>
       <div class="side">
-        <div class="card">
+        <div class="card" id="alertCard">
           <h3>Email alerts</h3>
           <label class="f">Send alerts to<input type="email" id="a-email" placeholder="you@example.com" autocomplete="email"></label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -492,6 +495,10 @@ footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px sol
       <button class="btn small" id="backupBtn">Back up my log</button>
       <button class="btn small" id="restoreBtn">Restore a backup</button>
       <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="syncbox" id="syncBox" hidden>
+      <p class="meta" id="syncStatus">Sign in with Google to keep your log in sync on your phone and computer. It's saved in a private app folder in your own Google Drive.</p>
+      <div class="appbtns"><button class="btn primary small" id="syncBtn">Sign in with Google</button><button class="btn small" id="syncOff" hidden>Turn off sync</button></div>
     </div>
   </section>
 
@@ -555,7 +562,9 @@ const RATING_WORDS = ["Not rated","Skip it","It was OK","Pretty good","Great spo
 const BASKET = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 11a5.5 5.5 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M2.5 10.5h19l-2.2 9.5H4.7z" fill="currentColor"/></svg>';
 
 const S = { visits: [], watches: [], settings: {}, mode: "loading", readOnly: false };
-const CLAUDE_URL = "https://claude.ai/artifact/DKPvdUEmBU6EPW6kroDiXt";
+const CLAUDE_URL = "https://claude.ai/artifact/Towu58453iQk6pDE18U6Qk";
+// OAuth client id from Google Cloud ("Web application" type). Empty = Google sync is hidden.
+const GOOGLE_CLIENT_ID = "";
 
 /* ---------------- storage ---------------- */
 const hasClaude = !!(window.claude && typeof window.claude.use === "function");
@@ -564,7 +573,10 @@ const sampleP = hasClaude ? window.claude.use("sample").catch(() => null) : Prom
 let db = null;
 const LS = "bramble-camp-log";
 function lsLoad(){ try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } }
-function lsSave(){ try { localStorage.setItem(LS, JSON.stringify({visits:S.visits, watches:S.watches, settings:S.settings})); } catch {} }
+// S.deleted remembers {id: deletedAt} so a device that syncs later doesn't bring deleted rows back.
+S.deleted = {};
+let onLocalChange = () => {};
+function lsSave(){ try { localStorage.setItem(LS, JSON.stringify({visits:S.visits, watches:S.watches, settings:S.settings, deleted:S.deleted})); } catch {} onLocalChange(); }
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 async function saveDoc(col, id, data){
@@ -573,12 +585,12 @@ async function saveDoc(col, id, data){
     catch(e){ toast(e && e.code === "invalid_argument" ? "You have view-only access to this camp log." : "Couldn't save just now. Try again in a moment."); return false; }
   }
   const list = S[col]; const i = list.findIndex(x => x.id === id);
-  const row = {id, ...data}; if (i >= 0) list[i] = row; else list.push(row);
+  const row = {id, ...data, updatedAt: new Date().toISOString()}; if (i >= 0) list[i] = row; else list.push(row);
   lsSave(); renderAll(); return true;
 }
 async function deleteDoc(col, id){
   if (db){ try { await db.collection(col).doc(id).delete(); return true; } catch { toast("Couldn't delete just now."); return false; } }
-  S[col] = S[col].filter(x => x.id !== id); lsSave(); renderAll(); return true;
+  S[col] = S[col].filter(x => x.id !== id); S.deleted[id] = new Date().toISOString(); lsSave(); renderAll(); return true;
 }
 async function saveSettings(patch){
   const next = {...S.settings, ...patch};
@@ -588,7 +600,7 @@ async function saveSettings(patch){
 dbP.then(d => {
   if (!d){
     const saved = lsLoad();
-    S.visits = saved.visits || []; S.watches = saved.watches || []; S.settings = saved.settings || {};
+    S.visits = saved.visits || []; S.watches = saved.watches || []; S.settings = saved.settings || {}; S.deleted = saved.deleted || {};
     S.mode = "local"; renderAll(); return;
   }
   db = d; S.mode = "db";
@@ -924,7 +936,12 @@ function renderSettings(){
   if (document.activeElement !== $("#a-email")) $("#a-email").value = s.email || "";
   $("#a-saved").textContent = s.email ? "Alerts go to " + s.email : "No email saved yet";
   const ch = s.checker || {};
-  if (S.mode === "local"){ $("#checker").innerHTML = `<span class="dot"></span><b>Email alerts run from the Claude version of this app.</b> This copy saves your watch list in this browser only, where the daily check can't see it. <a href="${CLAUDE_URL}" target="_blank" rel="noopener" style="color:var(--pine)">Open it in Claude ↗</a>`; return; }
+  const local = S.mode === "local";
+  $("#alertCard").hidden = local;
+  $("#watchIntro").textContent = local
+    ? "Hard-to-get sites we're waiting on, with the dates we want and a link to each booking page. Check back here before booking season."
+    : "Hard-to-get sites we're waiting on. When an opening shows up for our dates, an email alert goes out.";
+  if (local) return;
   $("#checker").innerHTML = ch.active
     ? `<span class="dot on"></span><b>Daily check is on.</b> Last run ${esc(ago(ch.lastRun))}. Sites that open up are marked "Opening found" and emailed.`
     : `<span class="dot"></span><b>Daily check isn't switched on yet.</b> Your watch list is saved. Ask Claude to turn on the daily availability check and emails will start.`;
@@ -1151,6 +1168,109 @@ if (!hasClaude){
     } catch { toast("That file isn't a Bramble Camp Log backup. Choose a file made with \"Back up my log\".", 6000); }
   });
 }
+
+/* ---------------- Google Drive sync (public sites only) ---------------- */
+// Each person's log is kept in their own Drive's hidden app folder (drive.appdata scope),
+// so nothing is stored on, or billed to, the app owner's accounts.
+if (!hasClaude && GOOGLE_CLIENT_ID) (function googleSync(){
+  const FILE = "bramble-camp-log.json", SCOPE = "https://www.googleapis.com/auth/drive.appdata", KEY = LS + "-sync";
+  const API = "https://www.googleapis.com/drive/v3/files", UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
+  let st = {}; try { st = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
+  const saveSt = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
+  let client = null, token = null, tokenExp = 0, fileId = st.fileId || null, busy = false, again = false, quiet = false, timer = null;
+  $("#syncBox").hidden = false;
+
+  function status(msg, isErr = false){ const p = $("#syncStatus"); p.textContent = msg; p.classList.toggle("err", isErr); }
+  function render(){
+    $("#syncBtn").textContent = st.on ? "Sync now" : "Sign in with Google";
+    $("#syncOff").hidden = !st.on;
+    if (!st.on) status("Sign in with Google to keep your log in sync on your phone and computer. It's saved in a private app folder in your own Google Drive.");
+    else if (!token) status(st.lastSync ? `Last synced ${ago(st.lastSync)}. Tap Sync now to reconnect to Google Drive.` : "Tap Sync now to reconnect to Google Drive.");
+    else status(`Synced with your Google Drive · ${ago(st.lastSync)}`);
+  }
+  const gsi = document.createElement("script");
+  gsi.src = "https://accounts.google.com/gsi/client"; gsi.async = true;
+  gsi.onload = () => {
+    client = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: SCOPE, callback: onToken,
+      error_callback: e => status(e && e.type === "popup_closed" ? "Google sign-in was closed before it finished." : "Google sign-in couldn't open. Allow pop-ups for this site, then try again.", true) });
+  };
+  gsi.onerror = () => status("Google sign-in couldn't load. Check your internet connection.", true);
+  document.head.appendChild(gsi);
+  render();
+
+  function onToken(r){
+    if (!r || r.error){ status("Google sign-in didn't finish. Try again.", true); return; }
+    if (!google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)){ status("To sync, allow Bramble Camp Log to use its app folder in your Google Drive.", true); return; }
+    token = r.access_token; tokenExp = Date.now() + (Number(r.expires_in || 3600) - 60) * 1000;
+    const first = !st.on; st.on = true; saveSt(); syncNow().then(() => { if (first) Scene.cheer("Your log is backed up to Google Drive now!"); });
+  }
+  async function api(url, opts = {}){
+    const res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: "Bearer " + token } });
+    if (res.status === 401){ token = null; throw { code: "auth" }; }
+    if (res.status === 404) throw { code: "missing" };
+    if (!res.ok) throw { code: "http", status: res.status };
+    return res;
+  }
+  const stamp = x => x.updatedAt || x.createdAt || "";
+  function mergeIn(remote){
+    const del = { ...(remote.deleted || {}) };
+    for (const [id, t] of Object.entries(S.deleted)) if (!del[id] || t > del[id]) del[id] = t;
+    const pick = (mine = [], theirs = []) => {
+      const m = new Map();
+      [...mine, ...theirs].forEach(x => { if (x && x.id && (!m.has(x.id) || stamp(x) > stamp(m.get(x.id)))) m.set(x.id, x); });
+      return [...m.values()].filter(x => !del[x.id] || stamp(x) > del[x.id]);
+    };
+    S.visits = pick(S.visits, remote.visits); S.watches = pick(S.watches, remote.watches); S.deleted = del;
+  }
+  async function syncNow(){
+    if (busy){ again = true; return; }
+    if (!token || Date.now() > tokenExp){ token = null; render(); return; }
+    busy = true; status("Syncing with Google Drive…");
+    try {
+      if (!fileId){
+        const q = encodeURIComponent(`name='${FILE}'`);
+        const list = await (await api(`${API}?spaces=appDataFolder&q=${q}&fields=files(id)&pageSize=1`)).json();
+        fileId = list.files && list.files[0] ? list.files[0].id : null;
+      }
+      if (fileId){
+        try { mergeIn(await (await api(`${API}/${fileId}?alt=media`)).json()); }
+        catch(e){ if (e.code !== "missing") throw e; fileId = null; }
+      }
+      const data = JSON.stringify({ app: "bramble-camp-log", version: 1, savedAt: new Date().toISOString(), visits: S.visits, watches: S.watches, deleted: S.deleted });
+      if (fileId){
+        await api(`${UPLOAD}/${fileId}?uploadType=media`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: data });
+      } else {
+        const b = "bramble" + Date.now();
+        const body = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: FILE, parents: ["appDataFolder"] })}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${data}\r\n--${b}--`;
+        fileId = (await (await api(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", headers: { "Content-Type": "multipart/related; boundary=" + b }, body })).json()).id;
+      }
+      quiet = true; lsSave(); quiet = false; renderAll();
+      st.fileId = fileId; st.lastSync = new Date().toISOString(); saveSt(); render();
+    } catch(e){
+      if (e && e.code === "auth") render();
+      else status("Couldn't reach Google Drive. Your changes are saved on this device; tap Sync now to try again.", true);
+    } finally {
+      busy = false;
+      if (again){ again = false; clearTimeout(timer); timer = setTimeout(syncNow, 1500); }
+    }
+  }
+  onLocalChange = () => {
+    if (quiet || !st.on) return;
+    if (!token){ status("Changes saved on this device. Tap Sync now to send them to Google Drive."); return; }
+    clearTimeout(timer); timer = setTimeout(syncNow, 2500);
+  };
+  $("#syncBtn").addEventListener("click", () => {
+    if (token && Date.now() < tokenExp) return syncNow();
+    if (!client){ status("Google sign-in is still loading. Try again in a moment.", true); return; }
+    client.requestAccessToken({ prompt: st.on ? "" : "consent" });
+  });
+  $("#syncOff").addEventListener("click", () => {
+    if (token) try { google.accounts.oauth2.revoke(token, () => {}); } catch {}
+    token = null; st = {}; fileId = null; saveSt(); render();
+    toast("Sync is off. Your log stays on this device, and the copy in your Google Drive is kept.");
+  });
+  setInterval(() => { if (st.on && token) render(); }, 60000);
+})();
 
 /* init */
 renderAll();

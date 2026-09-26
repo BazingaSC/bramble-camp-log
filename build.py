@@ -1,11 +1,18 @@
-"""Build index.html from the app source (../bramble-camp-log.html, the Claude version).
+"""Build the public site and the friends' Claude copy from the app source.
+
+Source:  ../bramble-camp-log.html (your private Claude version)
+Outputs: index.html (GitHub Pages) and ../bramble-camp-log-friends.html (shareable Claude copy;
+         republish it to https://claude.ai/artifact/Towu58453iQk6pDE18U6Qk after changes)
 
 Usage:  python build.py
 """
+import shutil
 from pathlib import Path
 
 here = Path(__file__).parent
-src = (here.parent / "bramble-camp-log.html").read_text(encoding="utf-8")
+src_path = here.parent / "bramble-camp-log.html"
+src = src_path.read_text(encoding="utf-8")
+shutil.copyfile(src_path, here.parent / "bramble-camp-log-friends.html")
 i = src.index('<div class="scene-wrap"')
 head, body = src[:i].rstrip(), src[i:].rstrip()
 page = f'''<!doctype html>
