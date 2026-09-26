@@ -4,7 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Bramble Camp Log: rate the campsites you've visited, note amenities and gear, and keep a watch list of hard-to-get sites.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='10,90 50,15 90,90' fill='%23E0A526'/%3E%3Cpolygon points='40,90 50,60 60,90' fill='%234A3312'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#2E5B39">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bramble">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta property="og:title" content="Bramble Camp Log">
+<meta property="og:description" content="Track and rate your campsites with Bramble the bear.">
+<meta property="og:image" content="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -194,6 +204,9 @@ label.f{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13p
 .addrow input{flex:1}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-weight:700;padding:10px 16px;border-radius:12px;z-index:30;max-width:calc(100% - 32px)}
+.appbar{margin-top:40px;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px}
+.appbar h3{font-family:var(--display);font-weight:400;font-size:22px;color:var(--pine)}
+.appbtns{display:flex;flex-wrap:wrap;gap:8px}
 footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion: reduce){
@@ -468,6 +481,20 @@ footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px sol
     </div>
   </section>
 
+  <section class="card appbar" id="appActions" hidden aria-label="App">
+    <div>
+      <h3>Take Bramble camping</h3>
+      <p class="meta" id="appHint">Install the app on your phone, share it with friends, and back up your log so it's never lost.</p>
+    </div>
+    <div class="appbtns">
+      <button class="btn primary small" id="installBtn" hidden>Install app</button>
+      <button class="btn small" id="shareBtn">Share with friends</button>
+      <button class="btn small" id="backupBtn">Back up my log</button>
+      <button class="btn small" id="restoreBtn">Restore a backup</button>
+      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
   <footer class="foot">
     <span id="saveMode">Connecting to your camp log…</span>
     <span>Search results come from Claude; confirm prices and openings on each booking site.</span>
@@ -592,7 +619,7 @@ function baskets(n, id){
   let h = ""; for (let i = 1; i <= 5; i++) h += `<button type="button" class="${i <= n ? "on" : ""}" data-rate="${i}" ${id?`data-id="${esc(id)}"`:""} aria-label="Rate ${i} of 5 baskets" aria-pressed="${i===n}">${BASKET}</button>`;
   return h + `<span class="lbl">${RATING_WORDS[n || 0]}</span>`;
 }
-let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+let toastT; function toast(msg, ms = 3200){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
 function togs(el, list, pressed=[]){
   const all = [...list, ...pressed.filter(p => !list.includes(p))];
   el.innerHTML = all.map(a => `<button type="button" class="tog" aria-pressed="${pressed.includes(a)}">${esc(a)}</button>`).join("");
@@ -1079,6 +1106,51 @@ const Scene = (() => {
     walkTo(){ if (!reduceMotion){ bram.target = W * .35; bram.pause = 0; } }
   };
 })();
+
+/* ---------------- installable app (public sites only) ---------------- */
+if (!hasClaude){
+  $("#appActions").hidden = false;
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if ("serviceWorker" in navigator && window.isSecureContext && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("#installBtn").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("#installBtn").hidden = true; Scene.cheer("Bramble's on your home screen now. Let's go camping!"); });
+  if (isIOS && !standalone) $("#installBtn").hidden = false;
+  if (standalone) $("#appHint").textContent = "Share the app with friends, and back up your log now and then so it's never lost.";
+  $("#installBtn").addEventListener("click", async () => {
+    if (installEvt){ installEvt.prompt(); const r = await installEvt.userChoice.catch(() => null); if (r?.outcome === "accepted") $("#installBtn").hidden = true; installEvt = null; return; }
+    toast("On iPhone or iPad: open this page in Safari, tap the Share button, then tap \"Add to Home Screen\".", 8000);
+  });
+  const appUrl = location.origin + location.pathname.replace(/index\.html$/, "");
+  $("#shareBtn").addEventListener("click", async () => {
+    const data = { title: "Bramble Camp Log", text: "Track and rate your campsites with Bramble the bear:", url: appUrl };
+    if (navigator.share){ try { await navigator.share(data); return; } catch(e){ if (e?.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(appUrl); toast("Link copied. Paste it in a text or email to your friends."); }
+    catch { toast("Share this link: " + appUrl, 8000); }
+  });
+  $("#backupBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ app: "bramble-camp-log", version: 1, exportedAt: new Date().toISOString(), visits: S.visits, watches: S.watches, settings: S.settings }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "bramble-camp-log-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast(`Backed up ${S.visits.length} campsite${S.visits.length === 1 ? "" : "s"} and ${S.watches.length} watched site${S.watches.length === 1 ? "" : "s"}.`);
+  });
+  $("#restoreBtn").addEventListener("click", () => $("#restoreFile").click());
+  $("#restoreFile").addEventListener("change", async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data?.app !== "bramble-camp-log" || !Array.isArray(data.visits)) throw new Error("not a backup");
+      const merge = (cur, add) => { const m = new Map(cur.map(x => [x.id, x])); (add || []).forEach(x => { if (x && typeof x === "object" && x.id) m.set(String(x.id), { ...x, id: String(x.id) }); }); return [...m.values()]; };
+      S.visits = merge(S.visits, data.visits); S.watches = merge(S.watches, data.watches);
+      if (data.settings && !S.settings.email) S.settings = { ...data.settings };
+      lsSave(); renderAll();
+      toast(`Restored. You now have ${S.visits.length} campsite${S.visits.length === 1 ? "" : "s"} in your log.`);
+      Scene.cheer("Welcome back, old campsites!");
+    } catch { toast("That file isn't a Bramble Camp Log backup. Choose a file made with \"Back up my log\".", 6000); }
+  });
+}
 
 /* init */
 renderAll();
