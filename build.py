@@ -22,7 +22,7 @@ page = f'''<!doctype html>
 <meta property="og:title" content="Bramble Camp Log">
 <meta property="og:description" content="Track and rate your campsites with Bramble the bear.">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
