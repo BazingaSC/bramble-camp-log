@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Bramble Camp Log: rate the campsites you've visited, note amenities and gear, and keep a watch list of hard-to-get sites.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='10,90 50,15 90,90' fill='%23E0A526'/%3E%3Cpolygon points='40,90 50,60 60,90' fill='%234A3312'/%3E%3C/svg%3E">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+</style>
+<title>Bramble Camp Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chewy&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#EDF1E0; --surface:#FBFCF4; --surface-2:#E2E9CF; --ink:#1F2B1E; --ink-2:#4E5C47; --line:#C7D2B1;
+  --pine:#2E5B39; --pine-ink:#FFFFFF; --hat:#3F8F45; --gingham:#C8432F; --honey:#DE9F1F; --wood:#95653A; --wood-ink:#FFF6E2;
+  --sky-top:#8FCDE8; --sky-bot:#E3F3EE; --mtn1:#9DBBA6; --mtn2:#76A08A; --ground:#6FA15A; --ground-2:#5E8F4B; --trail:#C9B07E;
+  --sun:#FFD66B; --star-op:0; --glow:0;
+  --good:#2F7D3A; --warn:#B97908; --hard:#B8392A;
+  --shadow:0 1px 2px rgba(31,43,30,.08),0 6px 18px rgba(31,43,30,.07);
+  --display:"Chewy","Comic Sans MS","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111B15; --surface:#1A281F; --surface-2:#223428; --ink:#ECEADA; --ink-2:#A9B59F; --line:#30463A;
+    --pine:#86C68F; --pine-ink:#0E1A12; --hat:#5DB064; --gingham:#E4694F; --honey:#F2BC45; --wood:#7A5230; --wood-ink:#FFEFD0;
+    --sky-top:#0A1330; --sky-bot:#2A3A5E; --mtn1:#2B3C4D; --mtn2:#1F2E3A; --ground:#1F3D27; --ground-2:#183220; --trail:#4B4230;
+    --sun:#F1EBCB; --star-op:1; --glow:1;
+    --good:#7CCB85; --warn:#E7B34A; --hard:#F0826B;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111B15; --surface:#1A281F; --surface-2:#223428; --ink:#ECEADA; --ink-2:#A9B59F; --line:#30463A;
+  --pine:#86C68F; --pine-ink:#0E1A12; --hat:#5DB064; --gingham:#E4694F; --honey:#F2BC45; --wood:#7A5230; --wood-ink:#FFEFD0;
+  --sky-top:#0A1330; --sky-bot:#2A3A5E; --mtn1:#2B3C4D; --mtn2:#1F2E3A; --ground:#1F3D27; --ground-2:#183220; --trail:#4B4230;
+  --sun:#F1EBCB; --star-op:1; --glow:1;
+  --good:#7CCB85; --warn:#E7B34A; --hard:#F0826B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+h1,h2,h3{text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--honey);outline-offset:2px}
+
+/* ---------- Scene ---------- */
+.scene-wrap{position:relative;height:clamp(210px,28vw,270px);overflow:hidden;border-bottom:10px solid transparent;
+  border-image:repeating-linear-gradient(90deg,var(--gingham) 0 12px,var(--surface) 12px 24px) 10}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.brand{position:absolute;left:16px;top:14px;z-index:2;pointer-events:none;max-width:calc(100% - 32px)}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,5vw,48px);line-height:1;letter-spacing:.5px;
+  color:var(--ink);text-shadow:0 2px 0 var(--surface)}
+.brand p{margin:.35rem 0 0;font-weight:700;color:var(--ink-2);font-size:14px;text-shadow:0 1px 0 var(--surface)}
+.clickable{cursor:pointer}
+.tree-sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 5s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
+.flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .35s ease-in-out infinite alternate}
+.flame.f2{animation-duration:.5s;animation-delay:.1s}
+@keyframes flick{from{transform:scale(1,1)}to{transform:scale(.85,1.18)}}
+.stars{opacity:var(--star-op)}
+.glow{opacity:calc(.25 + var(--glow)*.55)}
+.bubble{position:absolute;z-index:3;transform:translateX(-50%);background:var(--surface);color:var(--ink);
+  border:2px solid var(--ink);border-radius:16px;padding:7px 12px;font-weight:700;font-size:14px;line-height:1.3;
+  max-width:min(260px,70vw);width:max-content;box-shadow:3px 3px 0 var(--ink);pointer-events:none;
+  transition:opacity .2s, transform .2s;}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:var(--surface);
+  border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
+.bubble[hidden]{display:none!important}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+nav.signs{display:flex;gap:10px;flex-wrap:wrap;padding-block:18px 8px}
+.sign{position:relative;border:0;background:var(--wood);color:var(--wood-ink);font-family:var(--display);font-size:20px;
+  padding:8px 18px 8px 16px;border-radius:6px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25);
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);padding-right:28px;
+  transition:transform .15s}
+.sign:nth-child(2){transform:rotate(-1deg)}
+.sign:nth-child(3){transform:rotate(1deg)}
+.sign:hover{transform:translateY(-2px)}
+.sign[aria-selected="true"]{background:var(--pine);color:var(--pine-ink)}
+.sign .count{font-family:var(--body);font-weight:800;font-size:12px;background:rgba(0,0,0,.2);border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:3px}
+.panel{padding-top:10px}
+.panel-h{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.panel-h h2{font-family:var(--display);font-weight:400;font-size:30px;color:var(--pine)}
+.panel-h p{margin:.2rem 0 0;color:var(--ink-2);max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-2);font-weight:700;font-size:14px;margin-bottom:14px}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:17px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.toolbar input,.toolbar select{min-width:0}
+.toolbar .grow{flex:1 1 200px}
+
+.btn{border:2px solid var(--pine);background:transparent;color:var(--pine);font-weight:800;border-radius:10px;padding:8px 14px;cursor:pointer;line-height:1.2}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--pine);color:var(--pine-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:5px 10px;font-size:13px;border-width:1.5px}
+.btn.danger{border-color:var(--hard);color:var(--hard)}
+.btn.danger.solid{background:var(--hard);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.linkbtn{background:none;border:0;color:var(--pine);font-weight:800;text-decoration:underline;cursor:pointer;padding:0}
+
+input[type=text],input[type=email],input[type=url],input[type=number],input[type=date],input[type=search],select,textarea{
+  width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+textarea{resize:vertical;min-height:70px}
+label.f{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13px;color:var(--ink-2)}
+.grid-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.fieldset legend{font-weight:700;font-size:13px;color:var(--ink-2);padding:0;margin-bottom:6px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;align-items:start}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;min-width:0}
+.card-h{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.card h3{font-size:18px;font-weight:800;line-height:1.25}
+.meta{margin:2px 0 0;color:var(--ink-2);font-size:13px;font-weight:600}
+.sect{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--surface-2);border-radius:99px;padding:2px 9px;font-size:12.5px;font-weight:700}
+.chip.hit{background:var(--pine);color:var(--pine-ink)}
+.tog{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 11px;font-size:13px;font-weight:700;cursor:pointer}
+.tog[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:var(--pine-ink)}
+.gear{margin:0;padding-left:18px;font-size:14px}
+.notes{margin:0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.card-f{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px;margin-top:2px}
+.pill{font-size:11.5px;font-weight:800;border-radius:99px;padding:2px 9px;white-space:nowrap;border:1.5px solid currentColor}
+.pill.ex{color:var(--ink-2);border-style:dashed}
+.pill.easy{color:var(--good)} .pill.moderate{color:var(--warn)} .pill.hard{color:var(--hard)}
+.pill.found{color:var(--surface);background:var(--good);border-color:var(--good)}
+.pill.booked{color:var(--ink-2)}
+.pill.watching{color:var(--warn)}
+.pill.return{color:var(--good)}
+
+.rate{display:flex;align-items:center;gap:2px}
+.rate button{background:none;border:0;padding:2px;cursor:pointer;color:var(--line);line-height:0;border-radius:6px}
+.rate button.on{color:var(--honey)}
+.rate button:hover{transform:translateY(-2px)}
+.rate svg{width:24px;height:24px}
+.rate .lbl{margin-left:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+
+.empty{text-align:center;padding:36px 16px;color:var(--ink-2);border:2px dashed var(--line);border-radius:14px}
+.empty b{display:block;font-family:var(--display);font-weight:400;font-size:22px;color:var(--ink);margin-bottom:4px}
+
+/* search */
+.search-layout{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.search-layout{grid-template-columns:1fr}}
+.search-form{position:sticky;top:12px}
+@media (max-width:860px){.search-form{position:static}}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row input{flex:1;accent-color:var(--pine)}
+.range-row output{font-weight:800;font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+.check{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
+.check input{accent-color:var(--pine);width:18px;height:18px}
+.rollup{background:var(--surface-2);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.rollup h3{font-size:15px;margin-bottom:8px}
+.rollup .chip{background:var(--surface)}
+.rollup .chip.hit{background:var(--pine)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-size:13px}
+.facts div{background:var(--surface-2);border-radius:10px;padding:6px 8px}
+.facts b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.facts span{color:var(--ink-2);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.events{margin:0;padding-left:18px;font-size:14px}
+.events li b{font-weight:800}
+.why{font-size:14px;margin:0;font-style:italic;color:var(--ink-2)}
+.status{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:14px;background:var(--surface-2);margin-bottom:16px;font-weight:700}
+.status .spin{width:26px;height:26px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--pine);animation:spin 1s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:var(--hard)}
+
+/* watch */
+.watch-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:20px;align-items:start}
+@media (max-width:860px){.watch-layout{grid-template-columns:1fr}}
+.watch-item{display:flex;flex-direction:column;gap:6px}
+.side{display:flex;flex-direction:column;gap:16px}
+.checker{font-size:14px;color:var(--ink-2)}
+.checker b{color:var(--ink)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-right:6px}
+.dot.on{background:var(--good)}
+
+/* modal */
+.backdrop{position:fixed;inset:0;background:rgba(10,20,12,.55);z-index:20;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px}
+.modal{background:var(--surface);border-radius:18px;max-width:680px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:14px;border-top:10px solid transparent;
+  border-image:repeating-linear-gradient(90deg,var(--gingham) 0 12px,var(--surface) 12px 24px) 10}
+.modal h2{font-family:var(--display);font-weight:400;font-size:28px;color:var(--pine)}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.addrow{display:flex;gap:8px;margin-top:6px}
+.addrow input{flex:1}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-weight:700;padding:10px 16px;border-radius:12px;z-index:30;max-width:calc(100% - 32px)}
+footer.foot{margin-top:40px;color:var(--ink-2);font-size:13px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion: reduce){
+  .tree-sway,.flame,.status .spin{animation:none}
+  .sign,.rate button{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="scene-wrap" id="sceneWrap">
+  <svg id="scene" role="img" aria-label="Cartoon campground with Bramble the bear, Pip the cub, and a park ranger" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" style="stop-color:var(--sky-top)"/>
+        <stop offset="1" style="stop-color:var(--sky-bot)"/>
+      </linearGradient>
+      <radialGradient id="fireGlow">
+        <stop offset="0" stop-color="#FFB347" stop-opacity=".9"/>
+        <stop offset="1" stop-color="#FFB347" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect id="sky" x="0" y="0" width="1200" height="240" fill="url(#skyGrad)"/>
+    <g id="stars" class="stars"></g>
+    <g id="sun"><circle r="24" style="fill:var(--sun)"/><circle r="34" style="fill:var(--sun)" opacity=".25"/></g>
+    <g id="clouds"></g>
+    <polygon id="mtn1" style="fill:var(--mtn1)"/>
+    <polygon id="mtn2" style="fill:var(--mtn2)"/>
+    <g id="trees"></g>
+    <rect id="ground" x="0" y="188" width="1200" height="60" style="fill:var(--ground)"/>
+    <path id="trail" style="fill:var(--trail)" opacity=".7"/>
+    <g id="groundTufts"></g>
+
+    <!-- park sign -->
+    <g id="sign">
+      <rect x="-3" y="-44" width="6" height="44" fill="#6B4423"/>
+      <rect x="37" y="-44" width="6" height="44" fill="#6B4423"/>
+      <rect x="-12" y="-62" width="64" height="24" rx="4" fill="#8B5A2B" stroke="#5A3818" stroke-width="2"/>
+      <text x="20" y="-46" text-anchor="middle" font-family="Chewy, Trebuchet MS, sans-serif" font-size="11" fill="#FFF3D6">BRAMBLE</text>
+    </g>
+
+    <!-- tent -->
+    <g id="tent">
+      <polygon points="-40,0 0,-52 40,0" fill="#E0A526"/>
+      <polygon points="0,-52 40,0 8,0" fill="#C4861A"/>
+      <polygon points="-10,0 0,-30 10,0" fill="#4A3312"/>
+      <line x1="0" y1="-52" x2="0" y2="-60" stroke="#6B4423" stroke-width="3"/>
+    </g>
+
+    <!-- campfire -->
+    <g id="fire">
+      <circle class="glow" cx="0" cy="-10" r="34" fill="url(#fireGlow)"/>
+      <rect x="-16" y="-5" width="32" height="6" rx="3" fill="#6B4423" transform="rotate(12)"/>
+      <rect x="-16" y="-5" width="32" height="6" rx="3" fill="#7A4E26" transform="rotate(-12)"/>
+      <path class="flame" d="M0,-4 C-12,-10 -6,-22 0,-34 C6,-22 12,-10 0,-4Z" fill="#F07A22"/>
+      <path class="flame f2" d="M0,-4 C-6,-8 -4,-16 0,-24 C4,-16 6,-8 0,-4Z" fill="#FFD04D"/>
+    </g>
+
+    <!-- picnic basket -->
+    <g id="basketPos"><g id="basket" class="clickable" tabindex="0" role="button" aria-label="Picnic basket">
+      <ellipse cx="0" cy="0" rx="26" ry="4" fill="#000" opacity=".15"/>
+      <path d="M-14,-20 C-14,-38 14,-38 14,-20" fill="none" stroke="#7A4E26" stroke-width="4"/>
+      <path d="M-20,-20 L20,-20 L16,0 L-16,0Z" fill="#B9823F"/>
+      <rect x="-21" y="-24" width="42" height="7" rx="2" fill="#C8432F"/>
+      <g fill="#FFFFFF" opacity=".85"><rect x="-17" y="-24" width="5" height="7"/><rect x="-7" y="-24" width="5" height="7"/><rect x="3" y="-24" width="5" height="7"/><rect x="13" y="-24" width="5" height="7"/></g>
+      <path d="M-18,-12 L18,-12 M-17,-6 L17,-6" stroke="#8C5E2A" stroke-width="1.5"/>
+    </g></g>
+
+    <!-- Ranger -->
+    <g id="rangerPos"><g id="ranger" class="clickable" tabindex="0" role="button" aria-label="Park ranger">
+      <ellipse cx="0" cy="0" rx="18" ry="3.5" fill="#000" opacity=".15"/>
+      <rect x="-10" y="-34" width="8" height="34" rx="3" fill="#4B5A3A"/>
+      <rect x="2" y="-34" width="8" height="34" rx="3" fill="#4B5A3A"/>
+      <rect x="-12" y="-4" width="11" height="5" rx="2" fill="#2B1D10"/>
+      <rect x="1" y="-4" width="11" height="5" rx="2" fill="#2B1D10"/>
+      <rect x="-14" y="-72" width="28" height="42" rx="7" fill="#B99A5B"/>
+      <rect x="-14" y="-36" width="28" height="5" fill="#5A4524"/>
+      <circle cx="7" cy="-60" r="3.5" fill="#E8C24A"/>
+      <rect x="-20" y="-70" width="8" height="30" rx="4" fill="#B99A5B"/>
+      <g id="rangerArm"><rect x="12" y="-70" width="8" height="30" rx="4" fill="#B99A5B"/><circle cx="16" cy="-40" r="4.5" fill="#F1C9A0"/></g>
+      <rect x="-4" y="-78" width="8" height="8" fill="#F1C9A0"/>
+      <circle cx="0" cy="-88" r="13" fill="#F1C9A0"/>
+      <circle cx="-4" cy="-89" r="1.8" fill="#222"/><circle cx="5" cy="-89" r="1.8" fill="#222"/>
+      <path d="M-4,-82 Q1,-79 6,-82" stroke="#6B3E24" stroke-width="1.8" fill="none"/>
+      <path d="M-9,-84 Q1,-80 11,-84" stroke="#6B3E24" stroke-width="3" fill="none"/>
+      <ellipse cx="0" cy="-98" rx="22" ry="4" fill="#7A5A2E"/>
+      <path d="M-10,-98 L-5,-112 L0,-106 L5,-112 L10,-98Z" fill="#8F6C3A"/>
+      <rect x="-10" y="-102" width="20" height="3" fill="#4B3218"/>
+    </g></g>
+
+    <!-- Pip the cub -->
+    <g id="buddyPos"><g id="buddyFlip"><g id="buddy" class="clickable" tabindex="0" role="button" aria-label="Pip the cub">
+      <ellipse cx="0" cy="0" rx="16" ry="3" fill="#000" opacity=".15"/>
+      <g id="buddyLegB"><rect x="-9" y="-18" width="9" height="18" rx="4.5" fill="#86603A"/></g>
+      <g id="buddyLegF"><rect x="1" y="-18" width="9" height="18" rx="4.5" fill="#9C7247"/></g>
+      <rect x="-21" y="-45" width="12" height="22" rx="4" fill="#3E7D4A"/>
+      <rect x="-21" y="-33" width="12" height="3" fill="#2F6B3E"/>
+      <ellipse cx="0" cy="-30" rx="15" ry="16" fill="#9C7247"/>
+      <ellipse cx="3" cy="-27" rx="9" ry="11" fill="#D8B383"/>
+      <path d="M-6,-44 Q2,-38 8,-44" stroke="#2F6B3E" stroke-width="2.5" fill="none"/>
+      <g id="buddyHead">
+        <circle cx="-9" cy="-67" r="5" fill="#9C7247"/><circle cx="10" cy="-68" r="5" fill="#9C7247"/>
+        <circle cx="-9" cy="-67" r="2.5" fill="#D8B383"/><circle cx="10" cy="-68" r="2.5" fill="#D8B383"/>
+        <circle cx="2" cy="-56" r="14" fill="#9C7247"/>
+        <ellipse cx="9" cy="-51" rx="9" ry="6.5" fill="#E6C697"/>
+        <ellipse cx="16" cy="-54" rx="3.4" ry="2.8" fill="#1B1B1B"/>
+        <g id="buddyEyes"><ellipse cx="3" cy="-60" rx="2.6" ry="3.4" fill="#fff"/><ellipse cx="10" cy="-61" rx="2.6" ry="3.4" fill="#fff"/>
+        <circle cx="4" cy="-59.5" r="1.4" fill="#111"/><circle cx="11" cy="-60.5" r="1.4" fill="#111"/></g>
+        <path d="M6,-47 Q10,-45 14,-48" stroke="#3A2414" stroke-width="1.5" fill="none"/>
+      </g>
+    </g></g></g>
+
+    <!-- Bramble the bear -->
+    <g id="bramPos"><g id="bramFlip"><g id="bram" class="clickable" tabindex="0" role="button" aria-label="Bramble the bear">
+      <ellipse cx="0" cy="0" rx="24" ry="4" fill="#000" opacity=".15"/>
+      <g id="bramBody">
+        <g id="legB"><rect x="-15" y="-30" width="13" height="30" rx="6.5" fill="#76491F"/><ellipse cx="-7" cy="-2" rx="9" ry="4" fill="#5E3A18"/></g>
+        <g id="armB"><rect x="-22" y="-66" width="10" height="27" rx="5" fill="#76491F"/></g>
+        <g id="legF"><rect x="2" y="-30" width="13" height="30" rx="6.5" fill="#8A5A2E"/><ellipse cx="11" cy="-2" rx="9" ry="4" fill="#6B4423"/></g>
+        <ellipse cx="0" cy="-48" rx="23" ry="26" fill="#8A5A2E"/>
+        <ellipse cx="5" cy="-44" rx="14" ry="18" fill="#D9B27C"/>
+        <path d="M-17,-73 Q2,-63 20,-73 L6,-52Z" fill="#C8432F"/>
+        <g fill="#FFFFFF" opacity=".85"><circle cx="-6" cy="-68" r="1.4"/><circle cx="4" cy="-66" r="1.4"/><circle cx="12" cy="-69" r="1.4"/><circle cx="4" cy="-59" r="1.4"/></g>
+        <circle cx="-15" cy="-72" r="3" fill="#A8331F"/>
+        <g id="armF"><rect x="8" y="-68" width="10" height="28" rx="5" fill="#8A5A2E"/><circle cx="13" cy="-40" r="6" fill="#8A5A2E"/></g>
+        <g id="bramHead">
+          <circle cx="-12" cy="-104" r="7" fill="#8A5A2E"/><circle cx="-12" cy="-104" r="3.5" fill="#D9B27C"/>
+          <circle cx="4" cy="-90" r="20" fill="#8A5A2E"/>
+          <ellipse cx="14" cy="-83" rx="14" ry="10" fill="#E3C08D"/>
+          <ellipse cx="26" cy="-88" rx="5" ry="4" fill="#1B1B1B"/>
+          <ellipse cx="25" cy="-89.5" rx="1.6" ry="1" fill="#fff" opacity=".6"/>
+          <g id="bramEyes"><ellipse cx="8" cy="-95" rx="4" ry="5" fill="#fff"/><ellipse cx="17" cy="-96" rx="4" ry="5" fill="#fff"/>
+          <circle cx="10" cy="-94" r="2.1" fill="#111"/><circle cx="19" cy="-95" r="2.1" fill="#111"/></g>
+          <path id="bramMouth" d="M11,-78 Q18,-73 24,-79" stroke="#3A2414" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="20" cy="-106" r="6" fill="#8A5A2E"/><circle cx="20" cy="-106" r="3" fill="#D9B27C"/>
+          <g id="hat">
+            <path d="M-15,-101 Q4,-130 23,-101Z" fill="#E07A2E"/>
+            <path d="M-6,-104 Q-3,-116 0,-121 M4,-103 L4,-123 M14,-104 Q11,-116 8,-121" stroke="#C9621C" stroke-width="1.5" fill="none"/>
+            <rect x="-17" y="-105" width="42" height="8" rx="4" fill="#C9621C"/>
+            <circle cx="4" cy="-124" r="5.5" fill="#F6E7C8"/>
+          </g>
+        </g>
+      </g>
+    </g></g></g>
+  </svg>
+  <div class="brand">
+    <h1>Bramble Camp Log</h1>
+    <p>Every campsite we've loved, rated in picnic baskets.</p>
+  </div>
+  <div class="bubble" id="bubble" hidden aria-live="polite"></div>
+</div>
+
+<div class="wrap">
+  <nav class="signs" role="tablist" aria-label="Sections">
+    <button class="sign" role="tab" id="tab-visits" aria-controls="panel-visits" aria-selected="true">Our Campsites<span class="count" id="cnt-visits">0</span></button>
+    <button class="sign" role="tab" id="tab-search" aria-controls="panel-search" aria-selected="false">Find a Site</button>
+    <button class="sign" role="tab" id="tab-watch" aria-controls="panel-watch" aria-selected="false">Watch List<span class="count" id="cnt-watch">0</span></button>
+  </nav>
+
+  <!-- ============ VISITS ============ -->
+  <section class="panel" id="panel-visits" role="tabpanel" aria-labelledby="tab-visits">
+    <div class="panel-h">
+      <div>
+        <h2>Our Campsites</h2>
+        <p>Where we've pitched the tent, how it rated, and what we wish we'd packed.</p>
+      </div>
+      <button class="btn primary" id="addVisit">+ Log a campsite</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input type="search" id="vq" class="grow" placeholder="Search by name, place, notes…" aria-label="Search campsites">
+      <select id="vact" aria-label="Filter by activity" style="width:auto"><option value="">All activities</option></select>
+      <select id="vsort" aria-label="Sort" style="width:auto">
+        <option value="recent">Most recent trip</option>
+        <option value="rating">Highest rated</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
+    <div class="cards" id="visitList"></div>
+  </section>
+
+  <!-- ============ SEARCH ============ -->
+  <section class="panel" id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
+    <div class="panel-h">
+      <div>
+        <h2>Find a Site</h2>
+        <p>Tell Bramble where you're starting from and what you like. He'll scout campgrounds within range and list their amenities, events, and how hard they are to book.</p>
+      </div>
+    </div>
+    <div class="search-layout">
+      <form class="card search-form" id="searchForm" novalidate>
+        <div class="grid-f">
+          <label class="f">ZIP code<input type="text" id="s-zip" inputmode="numeric" maxlength="5" placeholder="70601" required></label>
+          <label class="f">Site type
+            <select id="s-type"><option>Any</option><option>Tent</option><option>RV</option><option>Cabin</option><option>Group site</option></select>
+          </label>
+        </div>
+        <label class="f">Distance
+          <div class="range-row"><input type="range" id="s-dist" min="10" max="500" step="10" value="150" aria-label="Distance in miles"><output id="s-dist-out">150 mi</output></div>
+        </label>
+        <div class="grid-f">
+          <label class="f">Arrive<input type="date" id="s-from"></label>
+          <label class="f">Leave<input type="date" id="s-to"></label>
+        </div>
+        <div class="grid-f">
+          <label class="f">Min $/night<input type="number" id="s-min" min="0" step="5" value="0"></label>
+          <label class="f">Max $/night<input type="number" id="s-max" min="0" step="5" value="60"></label>
+        </div>
+        <fieldset class="fieldset">
+          <legend>Activities we enjoy <button type="button" class="linkbtn" id="useFavs" style="font-size:12px;margin-left:6px">use our favorites</button></legend>
+          <div class="chips" id="s-acts"></div>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend>Must-have amenities</legend>
+          <div class="chips" id="s-amen"></div>
+        </fieldset>
+        <label class="f">Availability
+          <select id="s-avail">
+            <option value="any">Show everything</option>
+            <option value="open">Favor sites likely open for our dates</option>
+            <option value="hard">Include hard-to-get sites (we'll watch them)</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="s-events" checked> Look for special events during our dates</label>
+        <p class="err" id="s-err" hidden></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" type="submit" id="s-go">Search with Bramble</button>
+          <button class="btn" type="button" id="s-stop" hidden>Stop</button>
+        </div>
+      </form>
+      <div id="results" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ WATCH ============ -->
+  <section class="panel" id="panel-watch" role="tabpanel" aria-labelledby="tab-watch" hidden>
+    <div class="panel-h">
+      <div>
+        <h2>Watch List</h2>
+        <p>Hard-to-get sites we're waiting on. When an opening shows up for our dates, an email alert goes out.</p>
+      </div>
+    </div>
+    <div class="watch-layout">
+      <div>
+        <div class="cards" id="watchList" style="grid-template-columns:1fr"></div>
+      </div>
+      <div class="side">
+        <div class="card">
+          <h3>Email alerts</h3>
+          <label class="f">Send alerts to<input type="email" id="a-email" placeholder="you@example.com" autocomplete="email"></label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary small" id="a-save">Save email</button>
+            <span class="meta" id="a-saved"></span>
+          </div>
+          <p class="checker" id="checker"></p>
+        </div>
+        <form class="card" id="watchForm" novalidate>
+          <h3>Watch a site</h3>
+          <label class="f">Campground or site<input type="text" id="w-site" placeholder="Chisos Basin Campground, site 18" required></label>
+          <label class="f">Booking page link<input type="url" id="w-url" placeholder="https://www.recreation.gov/camping/…"></label>
+          <div class="grid-f">
+            <label class="f">Arrive<input type="date" id="w-from"></label>
+            <label class="f">Leave<input type="date" id="w-to"></label>
+          </div>
+          <label class="f">Site type
+            <select id="w-type"><option>Any</option><option>Tent</option><option>RV</option><option>Cabin</option><option>Group site</option></select>
+          </label>
+          <label class="f">Flexibility / notes<textarea id="w-notes" placeholder="Any Fri–Sun in October works"></textarea></label>
+          <p class="err" id="w-err" hidden></p>
+          <button class="btn primary" type="submit">Add to watch list</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span id="saveMode">Connecting to your camp log…</span>
+    <span>Search results come from Claude; confirm prices and openings on each booking site.</span>
+  </footer>
+</div>
+
+<!-- Visit modal -->
+<div class="backdrop" id="visitModal" hidden>
+  <form class="modal" id="visitForm" role="dialog" aria-modal="true" aria-labelledby="vm-title" novalidate>
+    <h2 id="vm-title">Log a campsite</h2>
+    <div class="grid-f">
+      <label class="f">Campground name<input type="text" id="v-name" required></label>
+      <label class="f">Location<input type="text" id="v-loc" placeholder="City, ST"></label>
+    </div>
+    <div class="grid-f">
+      <label class="f">Arrived<input type="date" id="v-from"></label>
+      <label class="f">Left<input type="date" id="v-to"></label>
+      <label class="f">Site #<input type="text" id="v-site"></label>
+      <label class="f">$ per night<input type="number" id="v-cost" min="0" step="1"></label>
+    </div>
+    <div class="fieldset">
+      <span class="sect">Our rating</span>
+      <div class="rate" id="v-rate"></div>
+    </div>
+    <fieldset class="fieldset">
+      <legend>Amenities</legend>
+      <div class="chips" id="v-amen"></div>
+      <div class="addrow"><input type="text" id="v-amen-add" placeholder="Add another amenity" aria-label="Add another amenity"><button type="button" class="btn small" data-add="amen">Add</button></div>
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend>Activities</legend>
+      <div class="chips" id="v-acts"></div>
+      <div class="addrow"><input type="text" id="v-acts-add" placeholder="Add another activity" aria-label="Add another activity"><button type="button" class="btn small" data-add="acts">Add</button></div>
+    </fieldset>
+    <label class="f">Special gear we needed (one per line)<textarea id="v-gear" placeholder="Leveling blocks&#10;Bear canister&#10;30-amp adapter"></textarea></label>
+    <label class="f">Notes<textarea id="v-notes" placeholder="Best sites, what to skip, who we met…"></textarea></label>
+    <label class="check"><input type="checkbox" id="v-return"> We'd go back</label>
+    <p class="err" id="v-err" hidden></p>
+    <div class="modal-f">
+      <button type="button" class="btn" id="v-cancel">Cancel</button>
+      <button type="submit" class="btn primary">Save campsite</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const AMENITIES = ["Flush toilets","Showers","Drinking water","Electric hookups","Water hookups","Sewer hookups","Dump station","Fire rings","Picnic tables","Camp store","Wi-Fi","Laundry","Pet friendly","Boat ramp","Playground","Swimming pool","Cabins","Accessible sites"];
+const ACTIVITIES = ["Hiking","Fishing","Swimming","Kayaking","Canoeing","Boating","Biking","Wildlife viewing","Birding","Stargazing","Horseback riding","Rock climbing","Beach","Hot springs","Photography","Geocaching"];
+const RATING_WORDS = ["Not rated","Skip it","It was OK","Pretty good","Great spot","Picnic perfect"];
+const BASKET = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 11a5.5 5.5 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M2.5 10.5h19l-2.2 9.5H4.7z" fill="currentColor"/></svg>';
+
+const S = { visits: [], watches: [], settings: {}, mode: "loading", readOnly: false };
+const CLAUDE_URL = "https://claude.ai/artifact/DKPvdUEmBU6EPW6kroDiXt";
+
+/* ---------------- storage ---------------- */
+const hasClaude = !!(window.claude && typeof window.claude.use === "function");
+const dbP = hasClaude ? window.claude.use("db").catch(() => null) : Promise.resolve(null);
+const sampleP = hasClaude ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
+let db = null;
+const LS = "bramble-camp-log";
+function lsLoad(){ try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } }
+function lsSave(){ try { localStorage.setItem(LS, JSON.stringify({visits:S.visits, watches:S.watches, settings:S.settings})); } catch {} }
+const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+async function saveDoc(col, id, data){
+  if (db){
+    try { await db.collection(col).doc(id).set(data); return true; }
+    catch(e){ toast(e && e.code === "invalid_argument" ? "You have view-only access to this camp log." : "Couldn't save just now. Try again in a moment."); return false; }
+  }
+  const list = S[col]; const i = list.findIndex(x => x.id === id);
+  const row = {id, ...data}; if (i >= 0) list[i] = row; else list.push(row);
+  lsSave(); renderAll(); return true;
+}
+async function deleteDoc(col, id){
+  if (db){ try { await db.collection(col).doc(id).delete(); return true; } catch { toast("Couldn't delete just now."); return false; } }
+  S[col] = S[col].filter(x => x.id !== id); lsSave(); renderAll(); return true;
+}
+async function saveSettings(patch){
+  const next = {...S.settings, ...patch};
+  if (db){ try { await db.doc("settings/alerts").set(next); return true; } catch { toast("Couldn't save settings."); return false; } }
+  S.settings = next; lsSave(); renderAll(); return true;
+}
+dbP.then(d => {
+  if (!d){
+    const saved = lsLoad();
+    S.visits = saved.visits || []; S.watches = saved.watches || []; S.settings = saved.settings || {};
+    S.mode = "local"; renderAll(); return;
+  }
+  db = d; S.mode = "db";
+  const strip = snap => snap.docs.map(x => ({id: x.id, ...x.data()}));
+  db.collection("visits").onSnapshot(s => { S.visits = strip(s); renderVisits(); renderSearchFavs(); }, () => {});
+  db.collection("watches").onSnapshot(s => { S.watches = strip(s); renderWatches(); }, () => {});
+  db.doc("settings/alerts").onSnapshot(s => { S.settings = s.exists ? {...s.data()} : {}; renderSettings(); }, () => {});
+  renderAll();
+});
+
+/* ---------------- helpers ---------------- */
+function fmtDate(d){ if(!d) return ""; const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"}); }
+function fmtRange(a, b){
+  if (!a && !b) return ""; if (!b || a === b) return fmtDate(a || b);
+  const A = new Date(a + "T12:00:00"), B = new Date(b + "T12:00:00");
+  if (isNaN(A) || isNaN(B)) return a + " – " + b;
+  if (A.getFullYear() === B.getFullYear()){
+    const left = A.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+    const right = A.getMonth() === B.getMonth() ? B.getDate() : B.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+    return `${left}–${right}, ${B.getFullYear()}`;
+  }
+  return fmtDate(a) + " – " + fmtDate(b);
+}
+function ago(iso){ if(!iso) return "never"; const t = Date.parse(iso); if (isNaN(t)) return iso; const m = Math.round((Date.now()-t)/60000);
+  if (m < 60) return m <= 1 ? "just now" : m + " min ago"; const h = Math.round(m/60); if (h < 36) return h + " h ago"; return Math.round(h/24) + " days ago"; }
+const chips = (arr, hits=[]) => `<div class="chips">${arr.map(a => `<span class="chip${hits.includes(a)?" hit":""}">${esc(a)}</span>`).join("")}</div>`;
+function baskets(n, id){
+  let h = ""; for (let i = 1; i <= 5; i++) h += `<button type="button" class="${i <= n ? "on" : ""}" data-rate="${i}" ${id?`data-id="${esc(id)}"`:""} aria-label="Rate ${i} of 5 baskets" aria-pressed="${i===n}">${BASKET}</button>`;
+  return h + `<span class="lbl">${RATING_WORDS[n || 0]}</span>`;
+}
+let toastT; function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+function togs(el, list, pressed=[]){
+  const all = [...list, ...pressed.filter(p => !list.includes(p))];
+  el.innerHTML = all.map(a => `<button type="button" class="tog" aria-pressed="${pressed.includes(a)}">${esc(a)}</button>`).join("");
+}
+function pressedOf(el){ return [...el.querySelectorAll('.tog[aria-pressed="true"]')].map(b => b.textContent); }
+document.addEventListener("click", e => { const t = e.target.closest(".tog"); if (t) t.setAttribute("aria-pressed", t.getAttribute("aria-pressed") !== "true"); });
+
+/* ---------------- tabs ---------------- */
+const TABS = ["visits","search","watch"];
+function showTab(name){
+  TABS.forEach(t => { $("#tab-"+t).setAttribute("aria-selected", t === name); $("#panel-"+t).hidden = t !== name; });
+  try { localStorage.setItem(LS+"-tab", name); } catch {}
+  if (name === "watch") { Scene.rangerWave(); Scene.say(S.watches.length ? "Ranger's got his eye on your picks." : "Add a hard-to-get site and I'll keep watch.", "ranger"); }
+  if (name === "search") Scene.say("Where to next? Give me a ZIP and I'll sniff out a spot.", "bram");
+}
+TABS.forEach(t => $("#tab-"+t).addEventListener("click", () => showTab(t)));
+$(".signs").addEventListener("keydown", e => {
+  if (!["ArrowLeft","ArrowRight"].includes(e.key)) return;
+  const i = TABS.findIndex(t => $("#tab-"+t).getAttribute("aria-selected") === "true");
+  const n = TABS[(i + (e.key === "ArrowRight" ? 1 : 2)) % 3]; showTab(n); $("#tab-"+n).focus();
+});
+
+/* ---------------- visits ---------------- */
+function renderStats(){
+  const v = S.visits, rated = v.filter(x => x.rating);
+  const avg = rated.length ? (rated.reduce((a,x) => a + x.rating, 0) / rated.length).toFixed(1) : "–";
+  const states = new Set(v.map(x => (x.location||"").split(",").pop().trim().toUpperCase()).filter(s => /^[A-Z]{2}$/.test(s)));
+  const counts = {}; v.forEach(x => (x.activities||[]).forEach(a => counts[a] = (counts[a]||0) + 1));
+  const fav = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  $("#stats").innerHTML = `<span><b>${v.length}</b> campsites</span><span><b>${avg}</b> avg baskets</span><span><b>${states.size}</b> states</span><span>Favorite activity: <b>${esc(fav ? fav[0] : "–")}</b></span>`;
+  const sel = $("#vact"), cur = sel.value;
+  const acts = [...new Set(v.flatMap(x => x.activities || []))].sort();
+  sel.innerHTML = `<option value="">All activities</option>` + acts.map(a => `<option ${a===cur?"selected":""}>${esc(a)}</option>`).join("");
+}
+let confirmDel = null;
+function visitCard(v){
+  const dates = fmtRange(v.from, v.to);
+  const meta = [v.location, dates, v.site && "Site " + v.site, v.cost && "$" + v.cost + "/night"].filter(Boolean).map(esc).join(" · ");
+  const gear = (v.gear||[]).filter(Boolean);
+  return `<article class="card" data-id="${esc(v.id)}">
+    <div class="card-h"><div><h3>${esc(v.name)}</h3><p class="meta">${meta}</p></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${v.example?'<span class="pill ex">Example</span>':""}${v.wouldReturn?'<span class="pill return">We\'d go back</span>':""}</div></div>
+    <div class="rate" role="group" aria-label="Rating for ${esc(v.name)}">${baskets(v.rating||0, v.id)}</div>
+    ${(v.amenities||[]).length ? `<div><p class="sect">Amenities</p>${chips(v.amenities)}</div>` : ""}
+    ${(v.activities||[]).length ? `<div><p class="sect">Activities</p>${chips(v.activities)}</div>` : ""}
+    ${gear.length ? `<div><p class="sect">Special gear we needed</p><ul class="gear">${gear.map(g => `<li>${esc(g)}</li>`).join("")}</ul></div>` : ""}
+    ${v.notes ? `<div><p class="sect">Notes</p><p class="notes">${esc(v.notes)}</p></div>` : ""}
+    <div class="card-f">${confirmDel === v.id
+      ? `<span class="meta" style="margin-right:auto;align-self:center">Delete this campsite?</span><button class="btn small" data-act="nodel">Keep it</button><button class="btn small danger solid" data-act="yesdel">Delete</button>`
+      : `<button class="btn small danger" data-act="del">Delete</button><button class="btn small" data-act="edit">Edit</button>`}</div>
+  </article>`;
+}
+function renderVisits(){
+  renderStats();
+  $("#cnt-visits").textContent = S.visits.length;
+  const q = $("#vq").value.trim().toLowerCase(), act = $("#vact").value, sort = $("#vsort").value;
+  let list = S.visits.filter(v => (!act || (v.activities||[]).includes(act)) &&
+    (!q || [v.name, v.location, v.notes, ...(v.amenities||[]), ...(v.activities||[]), ...(v.gear||[])].join(" ").toLowerCase().includes(q)));
+  list.sort(sort === "rating" ? (a,b) => (b.rating||0)-(a.rating||0) : sort === "name" ? (a,b) => a.name.localeCompare(b.name) : (a,b) => (b.from||b.createdAt||"").localeCompare(a.from||a.createdAt||""));
+  const el = $("#visitList");
+  if (S.mode === "loading"){ el.innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Opening the camp log…</b>Bramble is dusting off the pages.</div>`; return; }
+  if (!S.visits.length){ el.innerHTML = `<div class="empty" style="grid-column:1/-1"><b>No campsites yet</b>Log the first place you camped and give it a basket rating.<br><br><button class="btn primary" data-act="first">+ Log a campsite</button></div>`; return; }
+  if (!list.length){ el.innerHTML = `<div class="empty" style="grid-column:1/-1"><b>No matches</b>Try a different word or activity.</div>`; return; }
+  const ex = S.visits.some(v => v.example);
+  el.innerHTML = list.map(visitCard).join("") + (ex ? `<p class="meta" style="grid-column:1/-1">Cards marked Example are samples to show how the log works. <button class="linkbtn" data-act="clearex">Remove examples</button></p>` : "");
+}
+["#vq","#vact","#vsort"].forEach(s => $(s).addEventListener("input", renderVisits));
+$("#visitList").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.act === "first") return openVisit();
+  if (b.dataset.act === "clearex"){ for (const v of S.visits.filter(v => v.example)) await deleteDoc("visits", v.id); toast("Examples removed."); return; }
+  const card = b.closest("[data-id]"); if (!card) return;
+  const v = S.visits.find(x => x.id === card.dataset.id); if (!v) return;
+  if (b.dataset.rate){
+    const r = +b.dataset.rate === v.rating ? 0 : +b.dataset.rate;
+    const {id, ...rest} = v; await saveDoc("visits", id, {...rest, rating: r});
+    if (r === 5) Scene.cheer("Five baskets! Now that's a picnic-perfect campsite!");
+    else if (r) Scene.say(`${RATING_WORDS[r]}. Noted, noted.`, "bram");
+    return;
+  }
+  if (b.dataset.act === "edit") openVisit(v);
+  if (b.dataset.act === "del"){ confirmDel = v.id; renderVisits(); }
+  if (b.dataset.act === "nodel"){ confirmDel = null; renderVisits(); }
+  if (b.dataset.act === "yesdel"){ confirmDel = null; await deleteDoc("visits", v.id); toast("Deleted " + v.name + "."); Scene.say("Aw, one less basket to remember.", "buddy"); }
+});
+
+/* visit modal */
+let editing = null, formRating = 0;
+function setFormRating(n){ formRating = n; $("#v-rate").innerHTML = baskets(n); }
+$("#v-rate").addEventListener("click", e => { const b = e.target.closest("[data-rate]"); if (b) setFormRating(+b.dataset.rate === formRating ? 0 : +b.dataset.rate); });
+function openVisit(v = null, prefill = null){
+  editing = v; const d = v || prefill || {};
+  $("#vm-title").textContent = v ? "Edit campsite" : "Log a campsite";
+  $("#v-name").value = d.name || ""; $("#v-loc").value = d.location || "";
+  $("#v-from").value = d.from || ""; $("#v-to").value = d.to || ""; $("#v-site").value = d.site || ""; $("#v-cost").value = d.cost || "";
+  $("#v-gear").value = (d.gear || []).join("\n"); $("#v-notes").value = d.notes || ""; $("#v-return").checked = !!d.wouldReturn;
+  togs($("#v-amen"), AMENITIES, d.amenities || []); togs($("#v-acts"), ACTIVITIES, d.activities || []);
+  setFormRating(d.rating || 0); $("#v-err").hidden = true;
+  $("#visitModal").hidden = false; setTimeout(() => $("#v-name").focus(), 30);
+}
+function closeVisit(){ $("#visitModal").hidden = true; editing = null; }
+$("#addVisit").addEventListener("click", () => openVisit());
+$("#v-cancel").addEventListener("click", closeVisit);
+$("#visitModal").addEventListener("click", e => { if (e.target.id === "visitModal") closeVisit(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#visitModal").hidden) closeVisit(); });
+$("#visitForm").addEventListener("click", e => {
+  const b = e.target.closest("[data-add]"); if (!b) return;
+  const inp = $("#v-" + b.dataset.add + "-add"), val = inp.value.trim(); if (!val) return;
+  const box = $("#v-" + b.dataset.add); const cur = pressedOf(box);
+  togs(box, b.dataset.add === "amen" ? AMENITIES : ACTIVITIES, [...new Set([...cur, val])]); inp.value = "";
+});
+["amen","acts"].forEach(k => $("#v-"+k+"-add").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $(`[data-add="${k}"]`).click(); } }));
+$("#visitForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("#v-name").value.trim();
+  if (!name){ const er = $("#v-err"); er.textContent = "Give the campground a name so we can find it later."; er.hidden = false; $("#v-name").focus(); return; }
+  const data = {
+    name, location: $("#v-loc").value.trim(), from: $("#v-from").value, to: $("#v-to").value,
+    site: $("#v-site").value.trim(), cost: $("#v-cost").value ? +$("#v-cost").value : null,
+    rating: formRating, amenities: pressedOf($("#v-amen")), activities: pressedOf($("#v-acts")),
+    gear: $("#v-gear").value.split("\n").map(s => s.trim()).filter(Boolean), notes: $("#v-notes").value.trim(),
+    wouldReturn: $("#v-return").checked, example: false,
+    createdAt: editing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString()
+  };
+  const id = editing?.id || newId("v_"); const wasNew = !editing;
+  if (await saveDoc("visits", id, data)){
+    closeVisit(); toast(wasNew ? "Campsite logged." : "Campsite updated.");
+    if (wasNew) Scene.cheer(data.rating >= 4 ? "Another great one for the log! Woo-hoo!" : "Logged it! Every trail tells a story.");
+  }
+});
+
+/* ---------------- search ---------------- */
+togs($("#s-acts"), ACTIVITIES, ["Hiking","Fishing"]);
+togs($("#s-amen"), AMENITIES, ["Showers"]);
+$("#s-dist").addEventListener("input", e => $("#s-dist-out").textContent = e.target.value + " mi");
+function renderSearchFavs(){ $("#useFavs").hidden = !S.visits.length; }
+$("#useFavs").addEventListener("click", () => {
+  const counts = {}; S.visits.forEach(v => (v.activities||[]).forEach(a => counts[a] = (counts[a]||0) + (v.rating||3)));
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,4).map(x => x[0]);
+  togs($("#s-acts"), ACTIVITIES, top); Scene.say("Picked from your best-rated trips!", "bram");
+});
+(function restoreSearch(){ try { const s = JSON.parse(localStorage.getItem(LS+"-search") || "null"); if (!s) return;
+  $("#s-zip").value = s.zip || ""; $("#s-dist").value = s.dist || 150; $("#s-dist-out").textContent = (s.dist||150) + " mi";
+  $("#s-min").value = s.min ?? 0; $("#s-max").value = s.max ?? 60; $("#s-type").value = s.type || "Any"; $("#s-avail").value = s.avail || "any";
+  if (s.acts) togs($("#s-acts"), ACTIVITIES, s.acts); if (s.amen) togs($("#s-amen"), AMENITIES, s.amen); } catch {} })();
+
+let lastResults = null, lastCriteria = null, ctl = null;
+function crit(){
+  return { zip: $("#s-zip").value.trim(), dist: +$("#s-dist").value, from: $("#s-from").value, to: $("#s-to").value,
+    type: $("#s-type").value, min: +$("#s-min").value || 0, max: +$("#s-max").value || 0,
+    acts: pressedOf($("#s-acts")), amen: pressedOf($("#s-amen")), events: $("#s-events").checked, avail: $("#s-avail").value };
+}
+function prompt(c){
+  const today = new Date().toISOString().slice(0,10);
+  const avail = {any:"No preference.", open:"Favor campgrounds likely to have openings for their dates; skip ones that routinely sell out months ahead.", hard:"Include popular, hard-to-get campgrounds too; they will set alerts for openings."}[c.avail];
+  return `Today is ${today}. You are a campground scout for a family that camps across the United States.
+
+Find up to 8 real, currently operating campgrounds within ${c.dist} miles of US ZIP code ${c.zip}. Only list places you are confident exist. Put the best matches first.
+
+What they want:
+- Dates: ${c.from || "flexible"} to ${c.to || "flexible"}
+- Site type: ${c.type}
+- Price per night: $${c.min} to $${c.max || "any"}
+- Activities they enjoy: ${c.acts.join(", ") || "any"}
+- Must-have amenities: ${c.amen.join(", ") || "none"}
+- Special events: ${c.events ? "Find festivals, ranger programs, star parties, holiday events, fishing derbies and similar events at or near each campground during their dates (or the next 3 months if dates are flexible)." : "Not a priority; mention only very notable ones."}
+- Availability: ${avail}
+
+Reply with only JSON in this shape:
+{"origin":"City, ST of the ZIP","results":[{"name":"","operator":"e.g. Texas Parks & Wildlife, USACE, National Park Service, private","city":"","state":"ST","distanceMiles":0,"priceMin":0,"priceMax":0,"siteTypes":["Tent","RV","Cabin"],"amenities":[""],"activities":[""],"events":[{"name":"","when":""}],"demand":"easy | moderate | hard","bookingWindow":"how far ahead reservations open","availabilityNote":"what to expect for their dates","bookingUrl":"https://...","why":"one sentence on why it fits them"}]}
+
+Use amenity names from this list where they apply: ${AMENITIES.join(", ")}. Use activity names from this list where they apply: ${ACTIVITIES.join(", ")}. Estimate distance and price when unsure. Use an empty events array when you know of none.`;
+}
+function setSearching(on, msg){
+  $("#s-go").disabled = on; $("#s-stop").hidden = !on;
+  if (on) $("#results").innerHTML = `<div class="status"><div class="spin"></div><div>${esc(msg)}</div></div>`;
+}
+$("#s-stop").addEventListener("click", () => ctl?.abort());
+$("#searchForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const c = crit(), er = $("#s-err"); er.hidden = true;
+  if (!/^\d{5}$/.test(c.zip)){ er.textContent = "Enter a 5-digit ZIP code to search from."; er.hidden = false; $("#s-zip").focus(); return; }
+  if (c.max && c.min > c.max){ er.textContent = "The minimum price is higher than the maximum. Swap them or raise the max."; er.hidden = false; return; }
+  if (c.from && c.to && c.to < c.from){ er.textContent = "The leave date is before the arrive date."; er.hidden = false; return; }
+  try { localStorage.setItem(LS+"-search", JSON.stringify(c)); } catch {}
+  setSearching(true, "Checking with Claude…");
+  const sample = await sampleP;
+  if (!sample){ setSearching(false); $("#results").innerHTML = `<div class="empty"><b>Search isn't available here</b>Campground search uses Claude, which this view can't reach. Open the camp log in Claude to search.</div>`; return; }
+  Scene.say("Scouting campgrounds… this takes about a minute.", "bram"); Scene.walkTo("search");
+  setSearching(true, `Bramble is scouting campgrounds within ${c.dist} miles of ${c.zip}. This usually takes 30–90 seconds.`);
+  ctl = new AbortController();
+  try {
+    const out = await sample.json(prompt(c), { signal: ctl.signal });
+    const res = Array.isArray(out?.results) ? out.results : Array.isArray(out) ? out : [];
+    lastResults = res.filter(r => r && r.name); lastCriteria = c;
+    renderResults(out?.origin || "");
+    Scene.cheer(lastResults.length ? `Found ${lastResults.length} spots! I call dibs on the picnic tables.` : "Hmm, came up empty. Try a bigger radius?");
+  } catch(err){
+    const code = err?.code;
+    if (code === "cancelled"){ $("#results").innerHTML = `<div class="empty"><b>Search stopped</b>Change anything you like and search again.</div>`; }
+    else if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(code)){
+      $("#results").innerHTML = `<div class="empty"><b>Search needs your OK</b>This page asks Claude to scout campgrounds using your Claude account. Allow it when prompted, or reload to be asked again.</div>`; }
+    else if (code === "rate_limited"){ $("#results").innerHTML = `<div class="empty"><b>Too many searches at once</b>Wait a minute, then try again.</div>`; }
+    else { $("#results").innerHTML = `<div class="empty"><b>Search hit a snag</b>The answer didn't come back complete. Try again, or narrow the distance.</div>`; }
+  } finally { setSearching(false); $("#s-go").disabled = false; }
+});
+function renderResults(origin){
+  const c = lastCriteria, r = lastResults || [];
+  if (!r.length){ $("#results").innerHTML = `<div class="empty"><b>No campgrounds found</b>Try a larger distance or fewer must-haves.</div>`; return; }
+  const tally = {}; r.forEach(x => (x.amenities||[]).forEach(a => tally[a] = (tally[a]||0) + 1));
+  const roll = Object.entries(tally).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+  const demandLbl = {easy:"Easy to book", moderate:"Books up on weekends", hard:"Hard to get"};
+  const cards = r.map((x, i) => {
+    const d = String(x.demand||"").toLowerCase().includes("hard") ? "hard" : String(x.demand||"").toLowerCase().includes("mod") ? "moderate" : "easy";
+    const pmin = Number(x.priceMin)||0, pmax = Number(x.priceMax)||pmin;
+    const price = pmin || pmax ? (pmin === pmax ? `$${pmin}` : `$${pmin}–${pmax}`) : "–";
+    const over = c.max && pmin > c.max;
+    const url = /^https:\/\//i.test(x.bookingUrl||"") ? x.bookingUrl : "";
+    const map = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${x.name} ${x.city||""} ${x.state||""}`);
+    const ev = (x.events||[]).filter(v => v && v.name);
+    return `<article class="card" data-i="${i}">
+      <div class="card-h"><div><h3>${esc(x.name)}</h3><p class="meta">${esc([x.city, x.state].filter(Boolean).join(", "))}${x.operator ? " · " + esc(x.operator) : ""}</p></div>
+        <span class="pill ${d}">${demandLbl[d]}</span></div>
+      <div class="facts">
+        <div><span>Distance</span><b>${Math.round(Number(x.distanceMiles)||0)} mi</b></div>
+        <div><span>Per night</span><b>${esc(price)}</b>${over ? '<span style="color:var(--hard)">over budget</span>' : ""}</div>
+        <div><span>Sites</span><b style="font-size:13px">${esc((x.siteTypes||[]).join(", ") || "–")}</b></div>
+      </div>
+      ${x.why ? `<p class="why">${esc(x.why)}</p>` : ""}
+      <div><p class="sect">Amenities</p>${chips(x.amenities||[], c.amen)}</div>
+      ${(x.activities||[]).length ? `<div><p class="sect">Activities</p>${chips(x.activities, c.acts)}</div>` : ""}
+      ${ev.length ? `<div><p class="sect">Special events</p><ul class="events">${ev.map(v => `<li><b>${esc(v.name)}</b>${v.when ? " · " + esc(v.when) : ""}</li>`).join("")}</ul></div>` : ""}
+      <div><p class="sect">Availability</p><p class="notes">${esc(x.availabilityNote || "Check the booking site for your dates.")}${x.bookingWindow ? `<br><span class="meta">Reservations: ${esc(x.bookingWindow)}</span>` : ""}</p></div>
+      <div class="card-f" style="justify-content:space-between">
+        <span style="display:flex;gap:12px;align-self:center;font-weight:800;font-size:13px">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener" style="color:var(--pine)">Booking site ↗</a>` : ""}<a href="${esc(map)}" target="_blank" rel="noopener" style="color:var(--pine)">Map ↗</a></span>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-act="log">Log as visited</button><button class="btn small primary" data-act="watch">Watch for openings</button></span>
+      </div>
+    </article>`;
+  }).join("");
+  $("#results").innerHTML = `
+    <div class="rollup"><h3>Amenities across ${r.length} campgrounds${origin ? " near " + esc(origin) : ""}</h3>
+      <div class="chips">${roll.map(([a,n]) => `<span class="chip${c.amen.includes(a)?" hit":""}">${esc(a)} · ${n} of ${r.length}</span>`).join("")}</div></div>
+    <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${cards}</div>
+    <p class="meta" style="margin-top:12px">Suggestions come from Claude's knowledge and may be out of date. Confirm prices, events and openings on the booking site.</p>`;
+}
+$("#results").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const x = lastResults?.[+b.closest("[data-i]").dataset.i]; if (!x) return;
+  const loc = [x.city, x.state].filter(Boolean).join(", ");
+  if (b.dataset.act === "log") openVisit(null, { name: x.name, location: loc, amenities: x.amenities || [], activities: (x.activities||[]).filter(a => lastCriteria.acts.includes(a)) });
+  if (b.dataset.act === "watch"){
+    const url = /^https:\/\//i.test(x.bookingUrl||"") ? x.bookingUrl : "";
+    const ok = await saveDoc("watches", newId("w_"), { site: x.name + (loc ? " (" + loc + ")" : ""), url, from: lastCriteria.from, to: lastCriteria.to,
+      type: lastCriteria.type, notes: x.bookingWindow ? "Reservations: " + x.bookingWindow : "", status: "watching", createdAt: new Date().toISOString() });
+    if (ok){ b.textContent = "Watching ✓"; b.disabled = true; toast("Added to your watch list."); Scene.rangerWave(); Scene.say("I'll keep watch on that one!", "ranger"); }
+  }
+});
+
+/* ---------------- watch list ---------------- */
+function renderWatches(){
+  $("#cnt-watch").textContent = S.watches.filter(w => w.status !== "booked").length;
+  const el = $("#watchList");
+  if (S.mode === "loading"){ el.innerHTML = `<div class="empty"><b>Checking the ranger station…</b></div>`; return; }
+  if (!S.watches.length){ el.innerHTML = `<div class="empty"><b>Nothing on watch</b>Add a sold-out or hard-to-get site, or tap "Watch for openings" on a search result.</div>`; return; }
+  const order = {available:0, watching:1, booked:2};
+  const list = [...S.watches].sort((a,b) => (order[a.status]??1) - (order[b.status]??1) || (a.createdAt||"").localeCompare(b.createdAt||""));
+  const lbl = {available:"Opening found", watching:"Watching", booked:"Booked"};
+  el.innerHTML = list.map(w => {
+    const st = w.status || "watching";
+    return `<article class="card watch-item" data-id="${esc(w.id)}">
+      <div class="card-h"><div><h3>${esc(w.site)}</h3><p class="meta">${esc([fmtRange(w.from, w.to) || "Any dates", w.type && w.type !== "Any" ? w.type : ""].filter(Boolean).join(" · "))}</p></div>
+        <div style="display:flex;gap:6px">${w.example?'<span class="pill ex">Example</span>':""}<span class="pill ${st === "available" ? "found" : st}">${lbl[st] || st}</span></div></div>
+      ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ""}
+      ${w.lastNote ? `<p class="notes" style="color:var(--good);font-weight:700">${esc(w.lastNote)}</p>` : ""}
+      <p class="meta">Last checked: ${esc(ago(w.lastChecked))}${w.alertedAt ? " · Alert emailed " + esc(ago(w.alertedAt)) : ""}</p>
+      <div class="card-f">
+        ${/^https:\/\//i.test(w.url||"") ? `<a class="btn small" href="${esc(w.url)}" target="_blank" rel="noopener" style="margin-right:auto;text-decoration:none">Booking page ↗</a>` : ""}
+        <button class="btn small danger" data-act="rm">Remove</button>
+        ${st === "booked" ? `<button class="btn small" data-act="rewatch">Watch again</button>` : `<button class="btn small primary" data-act="booked">We booked it</button>`}
+      </div></article>`;
+  }).join("");
+}
+$("#watchList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const w = S.watches.find(x => x.id === b.closest("[data-id]").dataset.id); if (!w) return;
+  const {id, ...rest} = w;
+  if (b.dataset.act === "rm"){ await deleteDoc("watches", id); toast("Removed from watch list."); }
+  if (b.dataset.act === "booked"){ await saveDoc("watches", id, {...rest, status: "booked"}); Scene.cheer("You got it! Pack the picnic basket!"); }
+  if (b.dataset.act === "rewatch"){ await saveDoc("watches", id, {...rest, status: "watching"}); }
+});
+$("#watchForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const site = $("#w-site").value.trim(), url = $("#w-url").value.trim(), er = $("#w-err"); er.hidden = true;
+  if (!site){ er.textContent = "Name the campground or site to watch."; er.hidden = false; return; }
+  if (url && !/^https?:\/\//i.test(url)){ er.textContent = "The booking link should start with https://"; er.hidden = false; return; }
+  const ok = await saveDoc("watches", newId("w_"), { site, url, from: $("#w-from").value, to: $("#w-to").value, type: $("#w-type").value,
+    notes: $("#w-notes").value.trim(), status: "watching", createdAt: new Date().toISOString() });
+  if (ok){ e.target.reset(); toast("Added to your watch list."); Scene.rangerWave(); Scene.say("Got it. I'll holler when a spot opens up.", "ranger"); }
+});
+function renderSettings(){
+  const s = S.settings || {};
+  if (document.activeElement !== $("#a-email")) $("#a-email").value = s.email || "";
+  $("#a-saved").textContent = s.email ? "Alerts go to " + s.email : "No email saved yet";
+  const ch = s.checker || {};
+  if (S.mode === "local"){ $("#checker").innerHTML = `<span class="dot"></span><b>Email alerts run from the Claude version of this app.</b> This copy saves your watch list in this browser only, where the daily check can't see it. <a href="${CLAUDE_URL}" target="_blank" rel="noopener" style="color:var(--pine)">Open it in Claude ↗</a>`; return; }
+  $("#checker").innerHTML = ch.active
+    ? `<span class="dot on"></span><b>Daily check is on.</b> Last run ${esc(ago(ch.lastRun))}. Sites that open up are marked "Opening found" and emailed.`
+    : `<span class="dot"></span><b>Daily check isn't switched on yet.</b> Your watch list is saved. Ask Claude to turn on the daily availability check and emails will start.`;
+}
+$("#a-save").addEventListener("click", async () => {
+  const v = $("#a-email").value.trim();
+  if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ toast("That email address doesn't look right."); return; }
+  if (await saveSettings({ email: v })) toast(v ? "Alert email saved." : "Alert email cleared.");
+});
+
+function renderAll(){
+  renderVisits(); renderWatches(); renderSettings(); renderSearchFavs();
+  $("#saveMode").textContent = S.mode === "db" ? "Saved to this shared camp log." : S.mode === "local" ? "Saved in this browser only." : "Connecting to your camp log…";
+}
+
+/* ================= SCENE ================= */
+const Scene = (() => {
+  const svg = $("#scene"), wrap = $("#sceneWrap"), NS = "http://www.w3.org/2000/svg";
+  const H = 240, FEET = 224;
+  let W = 1200, scale = 1;
+  const el = id => document.getElementById(id);
+  const mk = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; };
+  const rnd = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  const P = { signX: 0, tentX: 0, fireX: 0, basketX: 0, rangerX: 0 };
+  const bram = { x: 260, dir: 1, target: 400, pause: 0, t: 0, jump: -1, wave: -1, mode: "wander", mouth: 0 };
+  const buddy = { x: 190, dir: 1, t: 0, jump: -1 };
+  let rangerWaveT = -1, basketHidden = 0, clouds = [];
+
+  function build(){
+    const r = wrap.getBoundingClientRect();
+    scale = r.height / H;
+    W = Math.max(380, Math.round(r.width / scale));
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    el("sky").setAttribute("width", W); el("ground").setAttribute("width", W);
+    const R = rnd(7);
+    let p1 = `0,${H} 0,150`, p2 = `0,${H} 0,172`;
+    for (let x = 0; x <= W + 80; x += 80){ p1 += ` ${x + 40},${95 + R()*40} ${x + 80},${140 + R()*20}`; }
+    for (let x = 0; x <= W + 60; x += 60){ p2 += ` ${x + 30},${135 + R()*25} ${x + 60},${165 + R()*12}`; }
+    el("mtn1").setAttribute("points", p1 + ` ${W},${H}`); el("mtn2").setAttribute("points", p2 + ` ${W},${H}`);
+    el("trail").setAttribute("d", `M0,${214} C${W*.25},${206} ${W*.5},${226} ${W*.75},${212} S${W},${210} ${W},${214} L${W},${232} C${W*.7},${236} ${W*.3},${226} 0,${234}Z`);
+    P.signX = Math.min(90, W * .08); P.basketX = W * .52; P.tentX = W * .74; P.fireX = P.tentX - 62; P.rangerX = W - 42;
+    const stars = el("stars"); stars.innerHTML = "";
+    for (let i = 0; i < Math.round(W / 22); i++) mk("circle", { cx: R()*W, cy: R()*120, r: R() < .15 ? 1.6 : .9, fill: "#FFF8DA" }, stars);
+    const trees = el("trees"); trees.innerHTML = "";
+    for (let x = 12; x < W; x += 34 + R()*40){
+      if (Math.abs(x - P.tentX) < 60) continue;
+      const s = .55 + R()*.55, g = mk("g", { transform: `translate(${x},190) scale(${s})` }, trees);
+      const inner = mk("g", { class: "tree-sway", style: `animation-delay:-${(R()*5).toFixed(2)}s` }, g);
+      mk("rect", { x: -4, y: -16, width: 8, height: 16, fill: "#5A3A1E" }, inner);
+      const shade = R() < .5 ? "#2F6B3E" : "#28593A";
+      [[0,-14,30,-34],[0,-36,24,-30],[0,-56,17,-26]].forEach(([cx,y,w,h]) => mk("polygon", { points: `${cx-w},${y} ${cx},${y+h} ${cx+w},${y}`, fill: shade }, inner));
+    }
+    const tufts = el("groundTufts"); tufts.innerHTML = "";
+    for (let x = 8; x < W; x += 40 + R()*50) mk("path", { d: `M${x},200 l3,-7 l2,7 l3,-9 l2,9`, stroke: "var(--ground-2)", "stroke-width": 2, fill: "none", style: "stroke:var(--ground-2)" }, tufts);
+    el("sun").setAttribute("transform", `translate(${W - 70},48)`);
+    el("sign").setAttribute("transform", `translate(${P.signX},200)`);
+    el("tent").setAttribute("transform", `translate(${P.tentX},204)`);
+    el("fire").setAttribute("transform", `translate(${P.fireX},214)`);
+    el("basketPos").setAttribute("transform", `translate(${P.basketX},220)`);
+    el("rangerPos").setAttribute("transform", `translate(${P.rangerX},222)`);
+    if (!clouds.length){
+      const cg = el("clouds");
+      clouds = [0,1,2].map(i => { const g = mk("g", {}, cg); const s = .7 + i*.2;
+        [[0,0,26,11],[18,-7,18,11],[-18,-3,16,9],[34,2,14,8]].forEach(([cx,cy,rx,ry]) => mk("ellipse", { cx: cx*s, cy: cy*s, rx: rx*s, ry: ry*s, fill: "#FFFFFF", opacity: .85, style: "opacity:calc(.85 - var(--star-op)*.7)" }, g));
+        return { g, x: (i + .3) * W / 3, y: 28 + i*18, v: 6 + i*3 }; });
+    }
+    bram.x = Math.min(bram.x, W - 120); buddy.x = Math.min(buddy.x, W - 120);
+    draw(0);
+  }
+
+  const lo = () => 60, hi = () => W - 110;
+  function pickTarget(){ bram.target = lo() + Math.random() * (hi() - lo()); bram.mode = "wander"; }
+
+  let bubbleT = 0, bubbleWho = "bram";
+  function say(text, who = "bram", ms = 3800){
+    const b = $("#bubble"); b.textContent = text; b.hidden = false; bubbleWho = who; bubbleT = performance.now() + ms; placeBubble();
+    if (who === "bram") bram.mouth = performance.now() + Math.min(ms, 2200);
+  }
+  function placeBubble(){
+    const b = $("#bubble"); if (b.hidden) return;
+    const pos = bubbleWho === "ranger" ? { x: P.rangerX, top: 112 } : bubbleWho === "buddy" ? { x: buddy.x, top: 74 } : { x: bram.x, top: 128 };
+    const wpx = wrap.clientWidth, bw = b.offsetWidth;
+    let left = pos.x * scale; left = Math.max(bw/2 + 8, Math.min(wpx - bw/2 - 8, left));
+    b.style.left = left + "px";
+    b.style.top = Math.max(6, (FEET - pos.top) * scale - b.offsetHeight - 14) + "px";
+  }
+
+  function rot(id, a, px, py){ el(id).setAttribute("transform", `rotate(${a.toFixed(1)} ${px} ${py})`); }
+  function blink(id, cy, now, seed){ const phase = (now / 1000 + seed) % 4.2; el(id).setAttribute("transform", phase < .12 ? `translate(0 ${cy}) scale(1 .1) translate(0 ${-cy})` : ""); }
+
+  function draw(now){
+    // bram
+    const walking = Math.abs(bram.target - bram.x) > 2 && bram.pause < now;
+    const sw = walking && !reduceMotion ? Math.sin(now / 90) * 26 : 0;
+    let jy = 0;
+    if (bram.jump > 0){ const k = (now - bram.jump) / 550; if (k >= 1) bram.jump = -1; else jy = -Math.sin(k * Math.PI) * 26; }
+    const bob = walking && !reduceMotion ? Math.abs(Math.sin(now / 90)) * -2.5 : 0;
+    el("bramPos").setAttribute("transform", `translate(${bram.x.toFixed(1)},${FEET + jy + bob})`);
+    el("bramFlip").setAttribute("transform", `scale(${bram.dir},1)`);
+    rot("legF", sw, 8, -28); rot("legB", -sw, -8, -28); rot("armB", sw * .6, -17, -64);
+    let arm = -sw * .6;
+    if (bram.wave > 0){ const k = (now - bram.wave) / 1400; if (k >= 1) bram.wave = -1; else arm = -150 + Math.sin(k * Math.PI * 6) * 18; }
+    rot("armF", arm, 13, -64);
+    blink("bramEyes", -95, now, 0);
+    el("bramMouth").setAttribute("d", bram.mouth > now && Math.floor(now / 140) % 2 ? "M11,-79 Q18,-68 24,-80 Q18,-75 11,-79Z" : "M11,-78 Q18,-73 24,-79");
+    el("hat").setAttribute("transform", bram.jump > 0 ? `translate(0 ${(jy * .25).toFixed(1)}) rotate(-6 3 -110)` : "");
+    // buddy
+    const bw = Math.abs(buddy.tx - buddy.x) > 3;
+    const bsw = bw && !reduceMotion ? Math.sin(now / 75) * 28 : 0;
+    let bj = 0; if (buddy.jump > 0){ const k = (now - buddy.jump) / 500; if (k >= 1) buddy.jump = -1; else bj = -Math.sin(k * Math.PI) * 18; }
+    el("buddyPos").setAttribute("transform", `translate(${buddy.x.toFixed(1)},${FEET + bj})`);
+    el("buddyFlip").setAttribute("transform", `scale(${buddy.dir},1)`);
+    rot("buddyLegF", bsw, 5, -16); rot("buddyLegB", -bsw, -5, -16);
+    blink("buddyEyes", -60, now, 1.7);
+    // ranger
+    let ra = 0; if (rangerWaveT > 0){ const k = (now - rangerWaveT) / 1600; if (k >= 1) rangerWaveT = -1; else ra = -150 + Math.sin(k * Math.PI * 6) * 18; }
+    rot("rangerArm", ra, 16, -68);
+    el("basket").style.display = basketHidden > now ? "none" : "";
+    clouds.forEach(c => c.g.setAttribute("transform", `translate(${c.x.toFixed(1)},${c.y})`));
+  }
+
+  let last = 0;
+  function tick(now){
+    const dt = Math.min(.05, (now - last) / 1000 || 0); last = now;
+    if (!reduceMotion){
+      if (bram.pause < now){
+        const d = bram.target - bram.x;
+        if (Math.abs(d) > 2){ bram.dir = Math.sign(d); bram.x += bram.dir * Math.min(Math.abs(d), (bram.mode === "basket" ? 95 : 48) * dt); }
+        else if (bram.mode === "basket"){ bram.mode = "idle"; bram.pause = now + 2600; bram.jump = now;
+          say(["Picnic time! I packed extra for the ranger.","Honey sandwiches, anyone?","Best seat in the campground, right here."][Math.floor(Math.random()*3)]); rangerWaveT = now; }
+        else { bram.pause = now + 1800 + Math.random() * 3800; pickTarget(); }
+      }
+      buddy.tx = bram.x - bram.dir * 62;
+      const bd = buddy.tx - buddy.x;
+      if (Math.abs(bd) > 3){ buddy.dir = Math.sign(bd); buddy.x += buddy.dir * Math.min(Math.abs(bd), 55 * dt); } else buddy.dir = Math.sign(bram.x - buddy.x) || 1;
+      clouds.forEach(c => { c.x += c.v * dt; if (c.x > W + 60) c.x = -60; });
+    } else { buddy.tx = buddy.x; buddy.dir = 1; }
+    if (bubbleT && now > bubbleT){ $("#bubble").hidden = true; bubbleT = 0; }
+    draw(now); placeBubble();
+    requestAnimationFrame(tick);
+  }
+
+  const BEAR_LINES = [
+    "Howdy, campers! Where are we pitching the tent next?",
+    "A good campsite is like a good picnic basket: full of surprises.",
+    "Rate 'em honest, Pip. Five baskets means five baskets.",
+    "Pro tip: write down the gear you forgot. Future you says thanks.",
+    "Leave it better than you found it. That's the Bramble way.",
+    () => S.visits.length ? `We've logged ${S.visits.length} campsite${S.visits.length === 1 ? "" : "s"} so far!` : "Our log is empty! Let's fix that.",
+    () => { const b = [...S.visits].sort((a,b) => (b.rating||0)-(a.rating||0))[0]; return b ? `Best spot so far? ${b.name}. Easy call.` : "Tap Log a campsite and I'll remember it forever."; }
+  ];
+  const BUDDY_LINES = ["Bramble, did you pack the marshmallows?","I packed the extra tent stakes this time.","Can we go somewhere with a lake?","Don't forget the bug spray!"];
+  const RANGER_LINES = [
+    () => S.watches.filter(w => w.status !== "booked").length ? `Keeping watch on ${S.watches.filter(w => w.status !== "booked").length} site${S.watches.filter(w => w.status !== "booked").length === 1 ? "" : "s"} for you.` : "Add a hard-to-get site to the Watch List and I'll keep an eye out.",
+    "Keep your food stored and your campfire small, folks.",
+    "Remember: pack it in, pack it out."
+  ];
+  const pick = arr => { const x = arr[Math.floor(Math.random() * arr.length)]; return typeof x === "function" ? x() : x; };
+  function onActivate(node, fn){ node.addEventListener("click", fn); node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fn(); } }); }
+
+  onActivate(el("bram"), () => { bram.jump = performance.now(); bram.wave = performance.now(); say(pick(BEAR_LINES)); });
+  onActivate(el("buddy"), () => { buddy.jump = performance.now(); say(pick(BUDDY_LINES), "buddy"); });
+  onActivate(el("ranger"), () => { rangerWaveT = performance.now(); say(pick(RANGER_LINES), "ranger"); });
+  onActivate(el("basket"), () => {
+    if (reduceMotion){ bram.x = P.basketX - 30; say("Picnic time! I packed extra for the ranger."); return; }
+    bram.target = P.basketX - 26; bram.mode = "basket"; bram.pause = 0; say("Is it lunchtime already?", "bram", 1800);
+  });
+
+  build();
+  let rT; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(build, 120); });
+  requestAnimationFrame(t => { last = t; tick(t); });
+  setTimeout(() => say(pick(BEAR_LINES.slice(0,1))), 900);
+
+  return {
+    say,
+    cheer(text){ bram.jump = performance.now(); bram.wave = performance.now(); buddy.jump = performance.now() + 120; say(text); },
+    rangerWave(){ rangerWaveT = performance.now(); },
+    walkTo(){ if (!reduceMotion){ bram.target = W * .35; bram.pause = 0; } }
+  };
+})();
+
+/* init */
+renderAll();
+sampleP.then(s => { if (s) return;
+  $("#s-go").disabled = true;
+  $("#results").innerHTML = `<div class="empty"><b>Search runs in the Claude version</b>Campground search asks Claude to scout sites, and this copy of the app can't reach Claude. <a href="${CLAUDE_URL}" target="_blank" rel="noopener" style="color:var(--pine);font-weight:800">Open it in Claude ↗</a></div>`; });
+try { const t = localStorage.getItem(LS+"-tab"); if (t && TABS.includes(t) && t !== "visits") showTab(t); } catch {}
+})();
+</script>
+</body>
+</html>
